@@ -5,12 +5,37 @@
 #include <stdio.h>
 #include "mmm.h"
 
+double **matrix_A;
+double **matrix_B;
+double **output;
+double **output_two;
+
 /**
  * Allocate and initialize the matrices on the heap. Populate
  * the input matrices with random integers from 0 to 99
  */
 void mmm_init() {
-	// TODO
+	matrix_A = (double**) malloc(sizeof(double*) * SIZE);
+	matrix_B = (double**) malloc(sizeof(double*) * SIZE);
+	output = (double**) malloc(sizeof(double*) * SIZE);
+	output_two = (double**) malloc(sizeof(double*) * SIZE);
+
+	for(int i=0; i<SIZE; i++){
+		matrix_A[i] = (double*) malloc(sizeof(double) * SIZE);
+		matrix_B[i] = (double*) malloc(sizeof(double) * SIZE);
+		output[i] = (double*) malloc(sizeof(double) * SIZE);
+		output_two[i] = (double*) malloc(sizeof(double) * SIZE);
+	}
+
+	srand(time(NULL));
+
+	for(int x=0; x<SIZE; x++){
+		for(int y=0; y<SIZE; y++){
+			matrix_A[x][y] = rand() % 10 + 1;
+			matrix_B[x][y] = rand() % 10 + 1;
+		}
+	}
+
 }
 
 /**
@@ -18,21 +43,52 @@ void mmm_init() {
  * @param matrix pointer to a 2D array
  */
 void mmm_reset(double **matrix) {
-	// TODO
+	for(int x=0; x<SIZE; x++){
+		for(int y=0; y<SIZE; y++){
+			matrix[x][y] = 0;
+		}
+	}
 }
 
 /**
  * Free up memory allocated to all matrices
  */
 void mmm_freeup() {
-	// TODO
+	for (int i=0; i < SIZE; i++) {
+		free(matrix_A[i]);	
+		free(matrix_B[i]);	
+		free(output[i]);
+		free(output_two[i]);
+		matrix_A[i] = NULL;
+		matrix_B[i] = NULL;
+		output[i] = NULL;
+		output_two[i] = NULL;
+	}
+
+	free(matrix_A);
+	free(matrix_B);
+	free(output);
+	free(output_two);
+	matrix_A = NULL;
+	matrix_B = NULL;
+	output = NULL;
+	output_two = NULL;
+
+
 }
 
 /**
  * Sequential MMM
  */
 void mmm_seq() {
-	// TODO - code to perform sequential MMM
+	for (int i = 0; i < SIZE; i++) {
+		for (int x = 0; x < SIZE; x++) {
+    		output[i][x] = 0;
+    		for (int y = 0; y < SIZE; y++) {
+        	 	output[i][x] += matrix_A[i][y] * matrix_B[y][x];
+        	}
+    	}
+	}
 }
 
 /**
@@ -40,6 +96,22 @@ void mmm_seq() {
  */
 void *mmm_par(void *args) {
 	// TODO - code to perform parallel MMM
+
+	thread_args *params = (thread_args*) args;
+	int start = (params->begin);
+	int end = (params->end);
+
+	for (int i = start - 1; i <= end - 1; i++) {
+		for (int x = 0; x < SIZE-1; x++) {
+    		output_two[i][x] = 0;
+    		for (int y = 0; y < SIZE; y++) {
+        	 	output_two[i][x] += matrix_A[i][y] * matrix_B[y][x];
+        	}
+    	}
+	}
+
+
+	return NULL;
 }
 
 /**
@@ -50,6 +122,15 @@ void *mmm_par(void *args) {
  * in the result matrices
  */
 double mmm_verify() {
-	// TODO
-	return -1;
+	double largest = 0;
+
+	for(int i=0; i<SIZE; i++){
+		for(int j=0; j<SIZE; j++){
+			double diff = fabs(output[i][j] - output_two[i][j]);
+			if(diff > largest){
+				largest = diff;
+			}
+		}
+	}
+	return largest;
 }
